@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול עסק חכם</title>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #6a0dad;
+            --secondary-color: #9b59b6;
+            --background-color: #f3e5f5;
+            --text-color: #333;
+            --card-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            font-family: 'Heebo', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, var(--background-color), #e1bee7);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1, h2 {
+            color: var(--primary-color);
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-item, .financial-summary, table {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .dashboard-item:hover, .financial-summary:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .dashboard-item h3 {
+            color: var(--secondary-color);
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+
+        .dashboard-item p {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: var(--primary-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 10px;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: right;
+        }
+
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(155, 89, 182, 0.1);
+        }
+
+        input[type="text"], input[type="number"], input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid var(--secondary-color);
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: linear-gradient(45deg, var(--secondary-color), var(--primary-color));
+            transform: scale(1.05);
+        }
+
+        .financial-summary {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .financial-summary h2 {
+            margin-top: 0;
+        }
+
+        #financialChart {
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .icon {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="fade-in"><i class="fas fa-chart-line icon"></i>ניהול עסק חכם</h1>
+        
+        <div class="dashboard fade-in">
+            <div class="dashboard-item">
+                <h3><i class="fas fa-box icon"></i>מלאי</h3>
+                <p id="totalInventory">0</p>
+            </div>
+            <div class="dashboard-item">
+                <h3><i class="fas fa-money-bill-wave icon"></i>הוצאות</h3>
+                <p id="totalExpenses">₪0</p>
+            </div>
+            <div class="dashboard-item">
+                <h3><i class="fas fa-coins icon"></i>הכנסות</h3>
+                <p id="totalIncome">₪0</p>
+            </div>
+        </div>
+
+        <div class="financial-summary fade-in">
+            <h2><i class="fas fa-chart-pie icon"></i>סיכום פיננסי</h2>
+            <canvas id="financialChart"></canvas>
+            <p><strong>רווח גולמי:</strong> <span id="grossProfit">₪0</span></p>
+            <p><strong>רווח נקי:</strong> <span id="netProfit">₪0</span></p>
+            <p><strong>שולי רווח:</strong> <span id="profitMargin">0%</span></p>
+        </div>
+        
+        <h2 class="fade-in"><i class="fas fa-warehouse icon"></i>ניהול מלאי</h2>
+        <table id="inventoryTable" class="fade-in">
+            <tr>
+                <th>שם המוצר</th>
+                <th>כמות</th>
+                <th>מחיר ליחידה</th>
+                <th>פעולות</th>
+            </tr>
+            <tr>
+                <td><input type="text" id="productName" placeholder="שם המוצר"></td>
+                <td><input type="number" id="productQuantity" placeholder="כמות"></td>
+                <td><input type="number" id="productPrice" placeholder="מחיר ליחידה"></td>
+                <td><button onclick="addInventoryItem()">הוסף פריט</button></td>
+            </tr>
+        </table>
+
+        <h2 class="fade-in"><i class="fas fa-file-invoice-dollar icon"></i>ניהול הוצאות</h2>
+        <table id="expensesTable" class="fade-in">
+            <tr>
+                <th>תיאור ההוצאה</th>
+                <th>סכום</th>
+                <th>תאריך</th>
+                <th>פעולות</th>
+            </tr>
+            <tr>
+                <td><input type="text" id="expenseDescription" placeholder="תיאור ההוצאה"></td>
+                <td><input type="number" id="expenseAmount" placeholder="סכום"></td>
+                <td><input type="date" id="expenseDate"></td>
+                <td><button onclick="addExpense()">הוסף הוצאה</button></td>
+            </tr>
+        </table>
+
+        <h2 class="fade-in"><i class="fas fa-hand-holding-usd icon"></i>ניהול הכנסות</h2>
+        <table id="incomeTable" class="fade-in">
+            <tr>
+                <th>מקור ההכנסה</th>
+                <th>סכום</th>
+                <th>תאריך</th>
+                <th>פעולות</th>
+            </tr>
+            <tr>
+                <td><input type="text" id="incomeSource" placeholder="מקור ההכנסה"></td>
+                <td><input type="number" id="incomeAmount" placeholder="סכום"></td>
+                <td><input type="date" id="incomeDate"></td>
+                <td><button onclick="addIncome()">הוסף הכנסה</button></td>
+            </tr>
+        </table>
+    </div>
+
+    <script>
+        let inventory = [];
+        let expenses = [];
+        let income = [];
+        let financialChart;
+
+        function addInventoryItem() {
+            const name = document.getElementById('productName').value;
+            const quantity = parseInt(document.getElementById('productQuantity').value);
+            const price = parseFloat(document.getElementById('productPrice').value);
+
+            if (name && quantity && price) {
+                inventory.push({ name, quantity, price });
+                updateInventoryTable();
+                updateDashboard();
+                clearInventoryInputs();
+            } else {
+                alert('נא למלא את כל השדות');
+            }
+        }
+
+        function updateInventoryTable() {
+            const table = document.getElementById('inventoryTable');
+            const rows = table.getElementsByTagName('tr');
+            for (let i = rows.length - 1; i > 1; i--) {
+                table.deleteRow(i);
+            }
+
+            inventory.forEach((item, index) => {
+                const row = table.insertRow(-1);
+                row.className = 'fade-in';
+                row.insertCell(0).textContent = item.name;
+                row.insertCell(1).textContent = item.quantity;
+                row.insertCell(2).textContent = `₪${item.price.toFixed(2)}`;
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '<i class="fas fa-trash"></i> מחק';
+                deleteButton.onclick = () => deleteInventoryItem(index);
+                row.insertCell(3).appendChild(deleteButton);
+            });
+        }
+
+        function deleteInventoryItem(index) {
+            inventory.splice(index, 1);
+            updateInventoryTable();
+            updateDashboard();
+        }
+
+        function clearInventoryInputs() {
+            document.getElementById('productName').value = '';
+            document.getElementById('productQuantity').value = '';
+            document.getElementById('productPrice').value = '';
+        }
+
+        function addExpense() {
+            const description = document.getElementById('expenseDescription').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const date = document.getElementById('expenseDate').value;
+
+            if (description && amount && date) {
+                expenses.push({ description, amount, date });
+                updateExpensesTable();
+                updateDashboard();
+                clearExpenseInputs();
+            } else {
+                alert('נא למלא את כל השדות');
+            }
+        }
+
+        function updateExpensesTable() {
+            const table = document.getElementById('expensesTable');
+            const rows = table.getElementsByTagName('tr');
+            for (let i = rows.length - 1; i > 1; i--) {
+                table.deleteRow(i);
+            }
+
+            expenses.forEach((expense, index) => {
+                const row = table.insertRow(-1);
+                row.className = 'fade-in';
+                row.insertCell(0).textContent = expense.description;
+                row.insertCell(1).textContent = `₪${expense.amount.toFixed(2)}`;
+                row.insertCell(2).textContent = expense.date;
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '<i class="fas fa-trash"></i> מחק';
+                deleteButton.onclick = () => deleteExpense(index);
+                row.insertCell(3).appendChild(deleteButton);
+            });
+        }
+
+        function deleteExpense(index) {
+            expenses.splice(index, 1);
+            updateExpensesTable();
+            updateDashboard();
+        }
+
+        function clearExpenseInputs() {
+            document.getElementById('expenseDescription').value = '';
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expenseDate').value = '';
+        }
+
+        function addIncome() {
+            const source = document.getElementById('incomeSource').value;
+            const amount = parseFloat(document.getElementById('incomeAmount').value);
+            const date = document.getElementById('incomeDate').value;
+
+            if (source && amount && date) {
+                income.push({ source, amount, date });
+                updateIncomeTable();
+                updateDashboard();
+                clearIncomeInputs();
+            } else {
+                alert('נא למלא את כל השדות');
+            }
+        }
+
+        function updateIncomeTable() {
+            const table = document.getElementById('incomeTable');
+            const rows = table.getElementsByTagName('tr');
+            for (let i = rows.length - 1; i > 1; i--) {
+                table.deleteRow(i);
+            }
+
+            income.forEach((item, index) => {
+                const row = table.insertRow(-1);
+                row.className = 'fade-in';
+                row.insertCell(0).textContent = item.source;
+                row.insertCell(1).textContent = `₪${item.amount.toFixed(2)}`;
+                row.insertCell(2).textContent = item.date;
+                const deleteButton = document.createElement('button');
+                deleteButton.innerHTML = '<i class="fas fa-trash"></i> מחק';
+                deleteButton.onclick = () => deleteIncome(index);
+                row.insertCell(3).appendChild(deleteButton);
+            });
+        }
+
+        function deleteIncome(index) {
+            income.splice(index, 1);
+            updateIncomeTable();
+            updateDashboard();
+        }
+
+        function clearIncomeInputs() {
+            document.getElementById('incomeSource').value = '';
+            document.getElementById('incomeAmount').value = '';
+            document.getElementById('incomeDate').value = '';
+        }
+
+        function updateDashboard() {
+            const totalInventory = inventory.reduce((sum, item) => sum + item.quantity, 0);
+            const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+            const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
+
+            document.getElementById('totalInventory').textContent = totalInventory;
+            document.getElementById('totalExpenses').textContent = `₪${totalExpenses.toFixed(2)}`;
+            document.getElementById('totalIncome').textContent = `₪${totalIncome.toFixed(2)}`;
+
+            updateFinancialSummary(totalIncome, totalExpenses);
+            updateFinancialChart(totalIncome, totalExpenses);
+        }
+
+        function updateFinancialSummary(totalIncome, totalExpenses) {
+            const grossProfit = totalIncome - totalExpenses;
+            const taxRate = 0.17; // נניח שיעור מס של 17%
+            const netProfit = grossProfit * (1 - taxRate);
+            const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) * 100 : 0;
+
+            document.getElementById('grossProfit').textContent = `₪${grossProfit.toFixed(2)}`;
+            document.getElementById('netProfit').textContent = `₪${netProfit.toFixed(2)}`;
+            document.getElementById('profitMargin').textContent = `${profitMargin.toFixed(2)}%`;
+        }
+
+        function updateFinancialChart(totalIncome, totalExpenses) {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            
+            if (financialChart) {
+                financialChart.destroy();
+            }
+
+            financialChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['הכנסות', 'הוצאות'],
+                    datasets: [{
+                        data: [totalIncome, totalExpenses],
+                        backgroundColor: ['#4CAF50', '#F44336'],
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'סיכום פיננסי'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize the dashboard
+        updateDashboard();
+    </script>
+</body>
+</html>
